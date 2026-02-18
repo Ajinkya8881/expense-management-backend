@@ -32,4 +32,20 @@ public class JwtService {
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+
+    public String extractEmail(String token) {
+        Key key  = Keys.hmacShaKeyFor(secret.getBytes());
+
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public boolean isTokenValid(String token, String email) {
+        String extraactedEmail = extractEmail(token);
+        return extraactedEmail.equals(email);
+    }
 }
