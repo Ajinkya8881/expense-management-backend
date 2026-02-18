@@ -1,6 +1,9 @@
 package com.expenseapp.user.service;
 
 
+import com.expenseapp.security.JwtService;
+import com.expenseapp.user.dto.AuthResponse;
+import com.expenseapp.user.dto.LoginRequest;
 import com.expenseapp.user.dto.RegisterRequest;
 import com.expenseapp.user.entity.User;
 import com.expenseapp.user.repository.UserRepository;
@@ -14,6 +17,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService  jwtService;
 
     public void register(RegisterRequest request){
 
@@ -29,5 +33,18 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+    }
+
+    public AuthResponse login(LoginRequest request){
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
+            throw new RuntimeException("Invalid credentials");
+
+        }
+        String token = jwtService.generateToken(user);
+
+        return new AuthResponse(token);
     }
 }
