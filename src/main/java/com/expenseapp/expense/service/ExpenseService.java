@@ -14,6 +14,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.domain.Specification;
+import java.time.LocalDate;
+
+
+
+
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -54,11 +62,30 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ExpenseResponse> getAll(String email, Pageable pageable) {
+    public Page<ExpenseResponse> getAll(String email,
+                                        LocalDate startDate,
+                                        LocalDate endDate,
+                                        Pageable pageable) {
 
         User user = getUserByEmail(email);
 
-        return expenseRepository.findByUser(user, pageable)
+        if( startDate != null && endDate != null && startDate.isAfter(endDate) ) {
+            throw new AppException("Start date cannot be after end date");
+        }
+
+        Specification<Expense> spec = (root, query, cb) ->
+                cb.equal(root.get("user"), user);
+
+        if( startDate != null ) {
+            spec = spec.and((root,query,cb) ->
+                    cb.greaterThanOrEqualTo(root.get("expenseDate"), startDate));
+        }
+        if( endDate != null ) {
+            spec = spec.and((root,query,cb)->
+                    cb.lessThanOrEqualTo(root.get("expenseDate"), endDate));
+        }
+
+        return expenseRepository.findAll(spec, pageable)
                 .map(this::mapToResponse);
     }
 

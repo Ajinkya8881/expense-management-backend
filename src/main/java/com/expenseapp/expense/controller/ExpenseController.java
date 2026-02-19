@@ -13,6 +13,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/expenses")
 @RequiredArgsConstructor
@@ -39,11 +41,16 @@ public class ExpenseController {
     @GetMapping
     public ApiResponse<Page<ExpenseResponse>> getAll(
             @AuthenticationPrincipal User userDetails,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
             @PageableDefault(size = 10) Pageable pageable
     ) {
 
         Page<ExpenseResponse> response =
-                expenseService.getAll(userDetails.getUsername(), pageable);
+                expenseService.getAll(userDetails.getUsername(),
+                        startDate,
+                        endDate,
+                        pageable);
 
         return ApiResponse.<Page<ExpenseResponse>>builder()
                 .success(true)
