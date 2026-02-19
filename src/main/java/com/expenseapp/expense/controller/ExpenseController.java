@@ -3,6 +3,7 @@ package com.expenseapp.expense.controller;
 import com.expenseapp.common.response.ApiResponse;
 import com.expenseapp.expense.dto.ExpenseRequest;
 import com.expenseapp.expense.dto.ExpenseResponse;
+import com.expenseapp.expense.dto.MonthlySummaryResponse;
 import com.expenseapp.expense.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -104,6 +105,24 @@ public class ExpenseController {
                 .success(true)
                 .message("Expense deleted successfully")
                 .data(null)
+                .build();
+    }
+
+    @GetMapping("/summary")
+    public ApiResponse<MonthlySummaryResponse> getMonthlySummary(
+            @AuthenticationPrincipal User userDetails,
+            @RequestParam int year,
+            @RequestParam int month
+    ){
+        MonthlySummaryResponse response =
+                expenseService.getMonthlySummary(userDetails.getUsername(),
+                        year,
+                        month);
+
+        return ApiResponse.<MonthlySummaryResponse>builder()
+                .success(true)
+                .message("Monthly summary fetched successfully")
+                .data(response)
                 .build();
     }
 }

@@ -5,7 +5,9 @@ import com.expenseapp.category.repository.CategoryRepository;
 import com.expenseapp.common.exception.AppException;
 import com.expenseapp.expense.dto.ExpenseRequest;
 import com.expenseapp.expense.dto.ExpenseResponse;
+import com.expenseapp.expense.dto.MonthlySummaryResponse;
 import com.expenseapp.expense.entity.Expense;
+import com.expenseapp.expense.repository.CategorySummaryProjection;
 import com.expenseapp.expense.repository.ExpenseRepository;
 import com.expenseapp.user.entity.User;
 import com.expenseapp.user.repository.UserRepository;
@@ -15,12 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.domain.Specification;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
-
-
-
-
-
+import java.util.List;
 
 
 @Service
@@ -154,6 +154,51 @@ public class ExpenseService {
                 .expenseDate(expense.getExpenseDate())
                 .categoryId(expense.getCategory().getId())
                 .categoryName(expense.getCategory().getName())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public MonthlySummaryResponse getMonthlySummary(
+            String email,
+            int year,
+            int month
+    ){
+        User user = getUserByEmail(email);
+
+        LocalDate startDate = LocalDate.of(year,month,1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        List<Expense> expenses =
+                expenseRepository.findAll((root,query, cb) ->
+                        cb.and(
+                                cb.equal(root.get("user"), user),
+                                cb.between(root.get("expenseDate"), startDate, endDate)
+                        )
+                );
+
+        BigDecimal totalAmount = expenses.stream()
+                .map(Expense::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Long totalCount = Long.valueOf(expenses.size());
+
+        List<CategorySummaryProjection> categorySummary =
+                expenseRepository.getCategorySummary(user, startDate, endDate);
+
+        List<MonthlySummaryResponse.CategoryBreakdown> breakdown =
+
+                categorySummary.stream()
+                        .map(p->MonthlySummaryResponse.CategoryBreakdown.builder()
+                                .categoryName(p.getCategoryName())
+                                .totalAmount(p.getTotalAmount())
+                                .build())
+                        .toList();
+
+
+        return MonthlySummaryResponse.builder()
+                .totalAmount(totalAmount)
+                .totalCount(totalCount)
+                .categoryBreakdown(breakdown)
                 .build();
     }
 }
