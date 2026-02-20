@@ -1,6 +1,5 @@
 package com.expenseapp.user.service;
 
-
 import com.expenseapp.common.exception.AppException;
 import com.expenseapp.security.JwtService;
 import com.expenseapp.user.dto.AuthResponse;
@@ -18,12 +17,12 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService  jwtService;
+    private final JwtService jwtService;
 
-    public void register(RegisterRequest request){
+    public AuthResponse register(RegisterRequest request) {
 
-        if(userRepository.existsByEmail(request.getEmail())){
-            throw new RuntimeException("Email already exists");
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new AppException("Email already exists");
         }
 
         User user = User.builder()
@@ -34,16 +33,21 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        String token = jwtService.generateToken(user);
+
+        return new AuthResponse(token);
     }
 
-    public AuthResponse login(LoginRequest request){
+    public AuthResponse login(LoginRequest request) {
+
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException("Email already exists"));
+                .orElseThrow(() -> new AppException("User not found"));
 
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AppException("Invalid credentials");
-
         }
+
         String token = jwtService.generateToken(user);
 
         return new AuthResponse(token);

@@ -1,6 +1,5 @@
 package com.expenseapp.user.controller;
 
-
 import com.expenseapp.common.response.ApiResponse;
 import com.expenseapp.user.dto.AuthResponse;
 import com.expenseapp.user.dto.LoginRequest;
@@ -18,15 +17,24 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping
-    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
-        authService.register(request);
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<Object>> register(
+            @Valid @RequestBody RegisterRequest request) {
 
-        return new AuthResponse("User registered successfully");
+        AuthResponse authResponse = authService.register(request);
+
+        ApiResponse<Object> response = ApiResponse.builder()
+                .success(true)
+                .message("User registered successfully")
+                .data(authResponse)
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Object>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<Object>> login(
+            @Valid @RequestBody LoginRequest request) {
 
         AuthResponse authResponse = authService.login(request);
 
@@ -38,5 +46,4 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
-
 }

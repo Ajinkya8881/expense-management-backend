@@ -35,6 +35,10 @@ public class DashboardService {
             int year,
             int month
     ){
+        if (month < 1 || month > 12) {
+            throw new AppException("Invalid month value");
+        }
+
         User user = getUserByEmail(email);
 
         MonthlySummaryResponse summary = expenseService.getMonthlySummary(email,year,month);
@@ -43,7 +47,7 @@ public class DashboardService {
         Long expenseCount = summary.getTotalCount();
 
         Budget budget = budgetRepository.findByUserAndYearAndMonth(user,year,month)
-                .orElseThrow(()-> new AppException("Budget not set for this month"));
+                .orElseThrow(()-> new AppException("No budget configured for this month"));
 
         BigDecimal budgetAmount = budget.getAmount();
 
@@ -53,7 +57,7 @@ public class DashboardService {
                 .max((a,b) -> a.getTotalAmount()
                         .compareTo(b.getTotalAmount()))
                 .map(MonthlySummaryResponse.CategoryBreakdown::getCategoryName)
-                .orElse(null);
+                .orElse("No expenses");
 
         return DashboardResponse.builder()
                 .totalSpent(totalSpent)
